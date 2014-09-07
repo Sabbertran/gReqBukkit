@@ -1,0 +1,14 @@
+name: gReqBukkit
+main: me.sabbertran.greqbukkit.GReqBukkit
+version: 1.0
+website: http://www.infected-order.com/
+author: Sabbertran
+description: BungeeCord Ticket Plugin
+commands:
+  ticket:
+    description: Create a support ticket
+    usage: "Usage:\n/ticket [Your concern]\n/ticket list"
+  tickets:
+    description: Staff comamnd
+    usage: "Usage:\n/tickets\n/tickets page #\n/tickets #\n/tickets claim #\n/tickets unclaim #\n/tickets tp #\n/tickets close # message"
+    
