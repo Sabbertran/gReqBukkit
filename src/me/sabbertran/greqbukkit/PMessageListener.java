@@ -6,25 +6,22 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
 public class PMessageListener implements PluginMessageListener
 {
-
+    
     private GReqBukkit main;
-
+    
     public PMessageListener(GReqBukkit main)
     {
         this.main = main;
     }
-
+    
     @Override
     public void onPluginMessageReceived(String channel, Player player, byte[] message)
     {
@@ -48,7 +45,7 @@ public class PMessageListener implements PluginMessageListener
                     if (rs.next())
                     {
                         String claimer = rs.getString("status").split(":")[1];
-
+                        
                         for (Player p : main.getServer().getOnlinePlayers())
                         {
                             if (pl.equals(p.getName()))
@@ -122,8 +119,21 @@ public class PMessageListener implements PluginMessageListener
                 int y = Integer.parseInt(coords.split(",")[1]);
                 int z = Integer.parseInt(coords.split(",")[2]);
                 Location l = new Location(main.getServer().getWorld(world), x, y, z);
-
+                
                 main.getPendingTeleports().put(pl, l);
+            } else if (subchannel.equals("new_comment"))
+            {
+                String receiver = in.readUTF();
+                boolean staff = Boolean.parseBoolean(in.readUTF());
+                int id = Integer.parseInt(in.readUTF());
+                
+                if (staff)
+                {
+                    main.newCommentNotifyStaff(id);
+                } else
+                {
+                    main.newCommentNotifyUser(id);
+                }
             }
         }
     }

@@ -27,8 +27,8 @@ public class TicketsCommand implements CommandExecutor
                 return true;
             } else
             {
-//                sender.sendMessage("You have to be a player to use this command.");
-                sender.sendMessage(main.getMessages().get(33));
+//                sender.sendMessage("You don't have permission to use this command.");
+                sender.sendMessage(main.getMessages().get(32));
                 return true;
             }
         } else if (args.length == 1)
@@ -180,6 +180,52 @@ public class TicketsCommand implements CommandExecutor
 //                    sender.sendMessage("You have to be a player to use this command.");
                     sender.sendMessage(main.getMessages().get(33));
                     return true;
+                }
+            } else
+            {
+//                sender.sendMessage("You don't have permission to use this command.");
+                sender.sendMessage(main.getMessages().get(32));
+                return true;
+            }
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("comments"))
+        {
+            if (sender.hasPermission("greq.comments"))
+            {
+                try
+                {
+                    int id = Integer.parseInt(args[1]);
+                    main.sendCommentList(sender, id);
+                    return true;
+                } catch (NumberFormatException ex)
+                {
+                    return false;
+                }
+            } else
+            {
+//                sender.sendMessage("You don't have permission to use this command.");
+                sender.sendMessage(main.getMessages().get(32));
+                return true;
+            }
+        } else if (args.length >= 4 && args[0].equalsIgnoreCase("comments") && args[1].equalsIgnoreCase("add"))
+        {
+            if (sender.hasPermission("greq.comments.add"))
+            {
+                try
+                {
+                    int id = Integer.parseInt(args[2]);
+
+                    String comment = "";
+                    for (int i = 3; i < args.length; i++)
+                    {
+                        comment = comment + args[i] + " ";
+                    }
+                    comment = comment.substring(0, comment.length() - 1);
+
+                    main.addTicketComment(sender, id, comment);
+                    return true;
+                } catch (NumberFormatException ex)
+                {
+                    return false;
                 }
             } else
             {
