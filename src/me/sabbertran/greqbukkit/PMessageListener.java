@@ -14,14 +14,14 @@ import org.bukkit.plugin.messaging.PluginMessageListener;
 
 public class PMessageListener implements PluginMessageListener
 {
-    
+
     private GReqBukkit main;
-    
+
     public PMessageListener(GReqBukkit main)
     {
         this.main = main;
     }
-    
+
     @Override
     public void onPluginMessageReceived(String channel, Player player, byte[] message)
     {
@@ -44,17 +44,21 @@ public class PMessageListener implements PluginMessageListener
                     ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
                     if (rs.next())
                     {
-                        String claimer = rs.getString("status").split(":")[1];
-                        
-                        for (Player p : main.getServer().getOnlinePlayers())
+                        int status = rs.getInt("status");
+                        if (status == 1)
                         {
-                            if (pl.equals(p.getName()))
+                            String claimer = rs.getString("status_extra");
+
+                            for (Player p : main.getServer().getOnlinePlayers())
                             {
-                                main.sendUserClaimInfo(p, Integer.parseInt(id));
-                            }
-                            if (p.hasPermission("greq.staff.claiminfo") && !p.getName().equals(claimer))
-                            {
-                                main.sendStaffClaimInfo(p, Integer.parseInt(id));
+                                if (pl.equals(p.getName()))
+                                {
+                                    main.sendUserClaimInfo(p, Integer.parseInt(id));
+                                }
+                                if (p.hasPermission("greq.staff.claiminfo") && !p.getName().equals(claimer))
+                                {
+                                    main.sendStaffClaimInfo(p, Integer.parseInt(id));
+                                }
                             }
                         }
                     }
@@ -119,14 +123,14 @@ public class PMessageListener implements PluginMessageListener
                 int y = Integer.parseInt(coords.split(",")[1]);
                 int z = Integer.parseInt(coords.split(",")[2]);
                 Location l = new Location(main.getServer().getWorld(world), x, y, z);
-                
+
                 main.getPendingTeleports().put(pl, l);
             } else if (subchannel.equals("new_comment"))
             {
                 String receiver = in.readUTF();
                 boolean staff = Boolean.parseBoolean(in.readUTF());
                 int id = Integer.parseInt(in.readUTF());
-                
+
                 if (staff)
                 {
                     main.newCommentNotifyStaff(id);

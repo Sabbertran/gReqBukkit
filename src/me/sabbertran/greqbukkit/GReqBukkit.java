@@ -79,7 +79,7 @@ public class GReqBukkit extends JavaPlugin
                     + "`location` text NOT NULL,\n"
                     + "`date` varchar(265) NOT NULL,\n"
                     + "`status` int(11) NOT NULL,\n"
-                    + "`status_extra` varchar(265) NOT NULL,\n"
+                    + "`status_extra` varchar(265),\n"
                     + "`comments` text,\n"
                     + "`answer` text,\n"
                     + "PRIMARY KEY  (`id`)\n"
@@ -147,7 +147,7 @@ public class GReqBukkit extends JavaPlugin
         {
             setupMessages();
         }
-        if (messages.size() != 39)
+        if (messages.size() != 41)
         {
             setupMessages();
         }
@@ -217,6 +217,7 @@ public class GReqBukkit extends JavaPlugin
         temp.add("Your comment has been saved.");
         temp.add("Comments for ticket #%id:");
         temp.add("%player: %msg");
+        temp.add("There are no comments for this ticket.");
         //Notify messages
         temp.add("# Notifications #");
         temp.add("There are currently no open tickets.");
@@ -226,7 +227,7 @@ public class GReqBukkit extends JavaPlugin
         {
             messagesFile.delete();
             messagesFile.createNewFile();
-            PrintWriter pw = new PrintWriter(new FileOutputStream(messagesFile));
+            PrintWriter pw = new PrintWriter(new FileOutputStream(messagesFile), true);
             pw.println("# Do not change the order of the messages, otherwise they will be messed up ingame! #");
             pw.println("#####################################################################################");
             for (String m : temp)
@@ -245,7 +246,19 @@ public class GReqBukkit extends JavaPlugin
         readMessagesFromFile();
     }
 
-    public String translateDatabaseVariables(String input, int id)
+    public void sendMessage(CommandSender p, String message, int ticketID)
+    {
+        if (ticketID != -1)
+        {
+            message = translateDatabaseVariables(message, ticketID);
+        }
+        for (String s : message.split("\n"))
+        {
+            p.sendMessage(s);
+        }
+    }
+
+    private String translateDatabaseVariables(String input, int id)
     {
         try
         {
@@ -343,9 +356,11 @@ public class GReqBukkit extends JavaPlugin
                     if (p.hasPermission("greq.notify"))
                     {
 //                        p.sendMessage("A new ticket has been created.");
-                        p.sendMessage(messages.get(6));
+//                        p.sendMessage(messages.get(6));
+                        sendMessage(p, messages.get(6), id);
 //                        p.sendMessage(author + " (" + server + "): " + ChatColor.GRAY + text);
-                        p.sendMessage(translateDatabaseVariables(messages.get(7), id));
+//                        p.sendMessage(translateDatabaseVariables(messages.get(7), id));
+                        sendMessage(p, messages.get(7), id);
                     }
                 }
             }
@@ -372,22 +387,26 @@ public class GReqBukkit extends JavaPlugin
                 int size = rs_.getRow();
                 rs_.close();
 //                p.sendMessage("There are currently " + size + " open tickets. Showing page " + page + "/" + (size / amount + 1));
-                p.sendMessage(messages.get(8).replace("%tickets", "" + size).replace("%page", "" + page).replace("%maxpage", "" + (size / amount + 1)));
+//                p.sendMessage(messages.get(8).replace("%tickets", "" + size).replace("%page", "" + page).replace("%maxpage", "" + (size / amount + 1)));
+                sendMessage(p, messages.get(8).replace("%tickets", "" + size).replace("%page", "" + page).replace("%maxpage", "" + (size / amount + 1)), -1);
                 do
                 {
                     int id = rs.getInt("id");
-                    p.sendMessage(translateDatabaseVariables(messages.get(9), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(9), id));
+                    sendMessage(p, messages.get(9), id);
                 } while (rs.next());
             } else
             {
                 if (amount == 5 && page == 1)
                 {
 //                    p.sendMessage("There are currently no open tickets.");
-                    p.sendMessage(messages.get(10));
+//                    p.sendMessage(messages.get(10));
+                    sendMessage(p, messages.get(10), -1);
                 } else
                 {
 //                    p.sendMessage("There are not enough open tickets to fill this page.");
-                    p.sendMessage(messages.get(11));
+//                    p.sendMessage(messages.get(11));
+                    sendMessage(p, messages.get(11), -1);
                 }
             }
             rs.close();
@@ -408,15 +427,19 @@ public class GReqBukkit extends JavaPlugin
             ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
-                p.sendMessage(translateDatabaseVariables(messages.get(12), id));
+//                p.sendMessage(translateDatabaseVariables(messages.get(12), id));
+                sendMessage(p, messages.get(12), id);
 //                p.sendMessage("Server: " + server + ", World: " + world + ", Coordinates: " + coordinates.replace(",", ", "));
-                p.sendMessage(translateDatabaseVariables(messages.get(13), id));
+//                p.sendMessage(translateDatabaseVariables(messages.get(13), id));
+                sendMessage(p, messages.get(13), id);
 //                p.sendMessage(ChatColor.GRAY + text);
-                p.sendMessage(translateDatabaseVariables(messages.get(14), id));
+//                p.sendMessage(translateDatabaseVariables(messages.get(14), id));
+                sendMessage(p, messages.get(14), id);
             } else
             {
 //                p.sendMessage("The ticket #" + id + " does not exist.");
-                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+//                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+                sendMessage(p, messages.get(5), id);
             }
             rs.close();
             con.close();
@@ -445,7 +468,8 @@ public class GReqBukkit extends JavaPlugin
                     con.createStatement().execute("UPDATE greq_tickets SET status = '3', status_extra = '" + p.getName() + "' , answer = '" + answer + "' WHERE id='" + id + "'");
 
 //                    p.sendMessage("Closed ticket #" + id + " with answer: " + ChatColor.GRAY + answer);
-                    p.sendMessage(translateDatabaseVariables(messages.get(17), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(17), id));
+                    sendMessage(p, messages.get(17), id);
 
                     ByteArrayOutputStream b = new ByteArrayOutputStream();
                     DataOutputStream out = new DataOutputStream(b);
@@ -456,12 +480,14 @@ public class GReqBukkit extends JavaPlugin
                 } else
                 {
 //                    p.sendMessage("The ticket #" + id + " is already closed");
-                    p.sendMessage(translateDatabaseVariables(messages.get(26), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(26), id));
+                    sendMessage(p, messages.get(26), id);
                 }
             } else
             {
 //                p.sendMessage("The ticket #" + id + " does not exist.");
-                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+//                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+                sendMessage(p, messages.get(5), id);
             }
             con.close();
         } catch (ClassNotFoundException | SQLException | IOException ex)
@@ -486,9 +512,11 @@ public class GReqBukkit extends JavaPlugin
                 if (status == 2 || status == 3)
                 {
 //                    p.sendMessage(status.split(":")[1] + " closed your ticket #" + id + " (" + ChatColor.GRAY + text + ChatColor.RESET + ")");
-                    p.sendMessage(translateDatabaseVariables(messages.get(15), id).replace("%name", status_extra));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(15), id).replace("%name", status_extra));
+                    sendMessage(p, messages.get(15).replace("%name", status_extra), id);
 //                    p.sendMessage("Answer: " + ChatColor.GRAY + answer);
-                    p.sendMessage(translateDatabaseVariables(messages.get(16), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(16), id));
+                    sendMessage(p, messages.get(16), id);
 
                     if (status == 3)
                     {
@@ -521,7 +549,8 @@ public class GReqBukkit extends JavaPlugin
                 if (status == 2 && !status_extra.equals(p.getName()));
                 {
 //                    p.sendMessage(status.split(":")[1] + " closed ticket #" + id + " (" + ChatColor.GRAY + text + ChatColor.RESET + ") with answer: " + ChatColor.GRAY + answer);
-                    p.sendMessage(translateDatabaseVariables(messages.get(18), id).replace("%name", status_extra));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(18), id).replace("%name", status_extra));
+                    sendMessage(p, messages.get(18).replace("%name", status_extra), id);
                 }
             }
             con.close();
@@ -551,7 +580,8 @@ public class GReqBukkit extends JavaPlugin
             con.close();
 
 //            p.sendMessage("Teleporting to ticket #" + id);
-            p.sendMessage(translateDatabaseVariables(messages.get(19), id));
+//            p.sendMessage(translateDatabaseVariables(messages.get(19), id));
+            sendMessage(p, messages.get(19), id);
 
             if (server.equals(server_name))
             {
@@ -600,16 +630,19 @@ public class GReqBukkit extends JavaPlugin
                     p.sendPluginMessage(this, "gReq", out.toByteArray());
 
 //                    p.sendMessage("You are now handling ticket #" + id + " (" + ChatColor.GRAY + text + ChatColor.RESET + ")");
-                    p.sendMessage(translateDatabaseVariables(messages.get(20), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(20), id));
+                    sendMessage(p, messages.get(20), id);
                 } else
                 {
 //                    p.sendMessage("The ticket #" + id + " is not open");
-                    p.sendMessage(translateDatabaseVariables(messages.get(22), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(22), id));
+                    sendMessage(p, messages.get(22), id);
                 }
             } else
             {
 //                p.sendMessage("The ticket #" + id + " does not exist.");
-                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+//                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+                sendMessage(p, messages.get(5), id);
             }
             con.close();
         } catch (ClassNotFoundException | SQLException ex)
@@ -643,16 +676,19 @@ public class GReqBukkit extends JavaPlugin
                     p.sendPluginMessage(this, "gReq", out.toByteArray());
 
 //                    p.sendMessage("You are no longer handling ticket #" + id + " (" + ChatColor.GRAY + text + ChatColor.RESET + ").");
-                    p.sendMessage(translateDatabaseVariables(messages.get(23), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(23), id));
+                    sendMessage(p, messages.get(23), id);
                 } else
                 {
 //                    p.sendMessage("The ticket #" + id + " is not claimed by you");
-                    p.sendMessage(translateDatabaseVariables(messages.get(25), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(25), id));
+                    sendMessage(p, messages.get(25), id);
                 }
             } else
             {
 //                p.sendMessage("The ticket #" + id + " does not exist.");
                 p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+                sendMessage(p, messages.get(5), id);
             }
             con.close();
         } catch (ClassNotFoundException | SQLException ex)
@@ -678,7 +714,8 @@ public class GReqBukkit extends JavaPlugin
                 if (status == 1)
                 {
 //                    p.sendMessage(status.split(":")[1] + " is now handling your request #" + id + " (" + ChatColor.GRAY + text + ChatColor.RESET + ")");
-                    p.sendMessage(translateDatabaseVariables(messages.get(1), id).replace("%name", status_extra));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(1), id).replace("%name", status_extra));
+                    sendMessage(p, messages.get(1).replace("%name", status_extra), id);
                 }
             }
             con.close();
@@ -704,7 +741,8 @@ public class GReqBukkit extends JavaPlugin
                 if (status == 1)
                 {
 //                    p.sendMessage(status.split(":")[1] + " is now handling ticket #" + id + " (" + ChatColor.GRAY + text + ChatColor.RESET + ")");
-                    p.sendMessage(translateDatabaseVariables(messages.get(21), id).replace("%name", status_extra));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(21), id).replace("%name", status_extra));
+                    sendMessage(p, messages.get(21).replace("%name", status_extra), id);
                 }
             }
             con.close();
@@ -731,7 +769,8 @@ public class GReqBukkit extends JavaPlugin
                 if (status == 0)
                 {
 //                    p.sendMessage("Your request #" + id + " (" + ChatColor.GRAY + text + ChatColor.RESET + ") is no longer being handled");
-                    p.sendMessage(translateDatabaseVariables(messages.get(2), id).replace("%name", unclaimer));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(2), id).replace("%name", unclaimer));
+                    sendMessage(p, messages.get(2).replace("%name", unclaimer), id);
                 }
             }
             con.close();
@@ -758,7 +797,8 @@ public class GReqBukkit extends JavaPlugin
                 if (status == 0)
                 {
 //                    p.sendMessage(status.split(":")[1] + " is no longer handling ticket #" + id + " (" + ChatColor.GRAY + text + ChatColor.RESET + ")");
-                    p.sendMessage(translateDatabaseVariables(messages.get(24), id).replace("%name", unclaimer));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(24), id).replace("%name", unclaimer));
+                    sendMessage(p, messages.get(24).replace("%name", unclaimer), id);
                 }
             }
             con.close();
@@ -782,16 +822,19 @@ public class GReqBukkit extends JavaPlugin
                 int size = rs.getRow();
                 rs.first();
 //                p.sendMessage("You currently have " + size + " open tickets:");
-                p.sendMessage(messages.get(3).replace("%tickets", "" + size));
+//                p.sendMessage(messages.get(3).replace("%tickets", "" + size));
+                sendMessage(p, messages.get(3).replace("%tickets", "" + size), -1);
                 do
                 {
                     int id = rs.getInt("id");
-                    p.sendMessage(translateDatabaseVariables(messages.get(7), id));
+//                    p.sendMessage(translateDatabaseVariables(messages.get(7), id));
+                    sendMessage(p, messages.get(7), id);
                 } while (rs.next());
             } else
             {
 //                p.sendMessage("You have no open tickets.");
-                p.sendMessage(messages.get(31));
+//                p.sendMessage(messages.get(31));
+                sendMessage(p, messages.get(31), -1);
             }
             con.close();
         } catch (ClassNotFoundException | SQLException ex)
@@ -808,49 +851,57 @@ public class GReqBukkit extends JavaPlugin
             String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
             Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
             ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
-            int status = rs.getInt("status");
-            String status_extra = rs.getString("status_extra");
-            String author = rs.getString("author");
-
-            if (author.equals(p.getName()) || (status == 1 || status_extra.equals(p.getName())))
+            if (rs.next())
             {
-                String comments = rs.getString("comments");
-                if (comments.equals(""))
+                int status = rs.getInt("status");
+                String status_extra = rs.getString("status_extra");
+                String author = rs.getString("author");
+
+                if (author.equals(p.getName()) || (status == 1 || status_extra.equals(p.getName())))
                 {
-                    comments = p.getName() + ":" + text + "#unseen#";
-                } else
-                {
-                    comments = comments + ";;" + p.getName() + ":" + text + "#unseen#";
+                    String comments = rs.getString("comments");
+                    if (comments == null || comments.equals(""))
+                    {
+                        comments = p.getName() + ":" + text + "#unseen#";
+                    } else
+                    {
+                        comments = comments + ";;" + p.getName() + ":" + text + "#unseen#";
+                    }
+                    con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comments + "' WHERE id = '" + id + "'");
+//                    p.sendMessage("Your comment has been saved.");
+//                    p.sendMessage(translateDatabaseVariables(messages.get(34), id));
+                    sendMessage(p, messages.get(34), id);
+
+                    String receiver;
+                    boolean staff;
+
+                    if (p.getName().equals(author))
+                    {
+                        newCommentNotifyStaff(id);
+                        receiver = status_extra;
+                        staff = true;
+                    } else
+                    {
+                        newCommentNotifyUser(id);
+                        receiver = author;
+                        staff = false;
+                    }
+
+                    ByteArrayOutputStream b = new ByteArrayOutputStream();
+                    DataOutputStream out = new DataOutputStream(b);
+                    out.writeUTF("new_comment");
+                    out.writeUTF("" + staff);
+                    out.writeUTF("" + id);
+                    getServer().sendPluginMessage(this, "gReq", b.toByteArray());
                 }
-                con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comments + "' WHERE id = '" + id + "'");
-//                p.sendMessage("Your comment has been saved.");
-                p.sendMessage(translateDatabaseVariables(messages.get(34), id));
 
-                String receiver;
-                boolean staff;
-
-                if (p.getName().equals(author))
-                {
-                    newCommentNotifyStaff(id);
-                    receiver = status_extra;
-                    staff = true;
-                } else
-                {
-                    newCommentNotifyUser(id);
-                    receiver = author;
-                    staff = false;
-                }
-
-                ByteArrayOutputStream b = new ByteArrayOutputStream();
-                DataOutputStream out = new DataOutputStream(b);
-                out.writeUTF("new_comment");
-                out.writeUTF("" + staff);
-                out.writeUTF("" + id);
-                getServer().sendPluginMessage(this, "gReq", b.toByteArray());
+                rs.close();
+                con.close();
+            } else
+            {
+//                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+                sendMessage(p, messages.get(5), id);
             }
-
-            rs.close();
-            con.close();
         } catch (ClassNotFoundException | SQLException | IOException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
@@ -865,36 +916,40 @@ public class GReqBukkit extends JavaPlugin
             String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
             Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
             ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
-            int status = rs.getInt("status");
-            String status_extra = rs.getString("status_extra");
-            String author = rs.getString("author");
-            String comments = rs.getString("comments");
-            String[] comments_split = comments.split(";;");
-            for (String s : comments_split)
+            if (rs.next())
             {
-                if (s.endsWith("#unseen#"))
+                int status = rs.getInt("status");
+                String status_extra = rs.getString("status_extra");
+                String author = rs.getString("author");
+                String comments = rs.getString("comments");
+                String[] comments_split = comments.split(";;");
+                for (String s : comments_split)
                 {
-                    s = s.substring(0, s.length() - 8);
-                    String player = s.split(":")[0];
-                    if (author.equals(player))
+                    if (s.endsWith("#unseen#"))
                     {
-                        Player pl = getServer().getPlayer(status_extra);
-                        if (pl != null)
+                        s = s.substring(0, s.length() - 8);
+                        String player = s.split(":")[0];
+                        if (author.equals(player) && status_extra != null)
                         {
-//                            pl.sendMessage("A new comment has been created for ticket #" + id + ". please check it using /tickets comments #" + id);
-                            pl.sendMessage(translateDatabaseVariables(messages.get(35), id));
-                            String comment = "";
-                            for (String s1 : comments_split)
+                            Player pl = getServer().getPlayer(status_extra);
+                            if (pl != null)
                             {
-                                if (s1.endsWith("#unseen#"))
+//                            pl.sendMessage("A new comment has been created for ticket #" + id + ". please check it using /tickets comments #" + id);
+//                                pl.sendMessage(translateDatabaseVariables(messages.get(35), id));
+                                sendMessage(pl, messages.get(35), id);
+                                String comment = "";
+                                for (String s1 : comments_split)
                                 {
-                                    s1 = s1.substring(0, s1.length() - 8);
+                                    if (s1.endsWith("#unseen#"))
+                                    {
+                                        s1 = s1.substring(0, s1.length() - 8);
+                                    }
+                                    comment = comment + s1 + ";;";
                                 }
-                                comment = comment + s1 + ";;";
+                                comment = comment.substring(0, comment.length() - 2);
+                                con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
+                                break;
                             }
-                            comment = comment.substring(0, comment.length() - 2);
-                            con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
-                            break;
                         }
                     }
                 }
@@ -914,36 +969,40 @@ public class GReqBukkit extends JavaPlugin
             String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
             Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
             ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
-            int status = rs.getInt("status");
-            String status_extra = rs.getString("status_extra");
-            String author = rs.getString("author");
-            String comments = rs.getString("comments");
-            String[] comments_split = comments.split(";;");
-            for (String s : comments_split)
+            if (rs.next())
             {
-                if (s.endsWith("#unseen#"))
+                int status = rs.getInt("status");
+                String status_extra = rs.getString("status_extra");
+                String author = rs.getString("author");
+                String comments = rs.getString("comments");
+                String[] comments_split = comments.split(";;");
+                for (String s : comments_split)
                 {
-                    s = s.substring(0, s.length() - 8);
-                    String player = s.split(":")[0];
-                    if (status_extra.equals(player))
+                    if (s.endsWith("#unseen#"))
                     {
-                        Player pl = getServer().getPlayer(author);
-                        if (pl != null)
+                        s = s.substring(0, s.length() - 8);
+                        String player = s.split(":")[0];
+                        if (status_extra.equals(player))
                         {
-//                            pl.sendMessage("A new comment has been created for ticket #" + id + ". please check it using /tickets comments #" + id);
-                            pl.sendMessage(translateDatabaseVariables(messages.get(35), id));
-                            String comment = "";
-                            for (String s1 : comments_split)
+                            Player pl = getServer().getPlayer(author);
+                            if (pl != null)
                             {
-                                if (s1.endsWith("#unseen#"))
+//                            pl.sendMessage("A new comment has been created for ticket #" + id + ". please check it using /tickets comments #" + id);
+//                                pl.sendMessage(translateDatabaseVariables(messages.get(35), id));
+                                sendMessage(pl, messages.get(35), id);
+                                String comment = "";
+                                for (String s1 : comments_split)
                                 {
-                                    s1 = s1.substring(0, s1.length() - 8);
+                                    if (s1.endsWith("#unseen#"))
+                                    {
+                                        s1 = s1.substring(0, s1.length() - 8);
+                                    }
+                                    comment = comment + s1 + ";;";
                                 }
-                                comment = comment + s1 + ";;";
+                                comment = comment.substring(0, comment.length() - 2);
+                                con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
+                                break;
                             }
-                            comment = comment.substring(0, comment.length() - 2);
-                            con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
-                            break;
                         }
                     }
                 }
@@ -963,19 +1022,35 @@ public class GReqBukkit extends JavaPlugin
             String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
             Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
             ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
-            String comments = rs.getString("comments");
-            String[] comments_split = comments.split(";;");
-            p.sendMessage(translateDatabaseVariables(messages.get(36), id));
-            for (String s : comments_split)
+            if (rs.next())
             {
-                if (s.endsWith("#unseen#"))
+                String comments = rs.getString("comments");
+                if (comments != null)
                 {
-                    s = s.substring(0, s.length() - 8);
-                    String player = s.split(":")[0];
-                    String msg = s.split(":")[1];
-//                    p.sendMessage("%player: %msg");
-                    p.sendMessage(messages.get(37).replace("%player", player).replace("%msg", msg));
+                    String[] comments_split = comments.split(";;");
+//                    p.sendMessage(translateDatabaseVariables(messages.get(36), id));
+                    sendMessage(p, messages.get(36), id);
+                    for (String s : comments_split)
+                    {
+                        if (s.endsWith("#unseen#"))
+                        {
+                            s = s.substring(0, s.length() - 8);
+                            String player = s.split(":")[0];
+                            String msg = s.split(":")[1];
+//                            p.sendMessage("%player: %msg");
+//                            p.sendMessage(messages.get(37).replace("%player", player).replace("%msg", msg));
+                            sendMessage(p, messages.get(37).replace("%player", player).replace("%msg", msg), id);
+                        }
+                    }
+                } else
+                {
+//                    p.sendMessage(messages.get(38));
+                    sendMessage(p, messages.get(38), id);
                 }
+            } else
+            {
+//                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
+                sendMessage(p, messages.get(5), id);
             }
 
         } catch (SQLException | ClassNotFoundException ex)
@@ -994,12 +1069,14 @@ public class GReqBukkit extends JavaPlugin
             ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE status = '0' OR status = '1'");
             rs.last();
             int count = rs.getRow();
-            if (count == 0 && includeZero)
+            if (count != 0)
             {
-                p.sendMessage(messages.get(38));
-            } else
+//                p.sendMessage(messages.get(40).replace("%amount", "" + count));
+                sendMessage(p, messages.get(40).replace("%amount", "" + count), -1);
+            } else if (count == 0 && includeZero)
             {
-                p.sendMessage(messages.get(39).replace("%amount", "" + count));
+//                p.sendMessage(messages.get(39));
+                sendMessage(p, messages.get(39), -1);
             }
 
             rs.close();

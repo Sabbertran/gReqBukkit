@@ -28,7 +28,8 @@ public class TicketsCommand implements CommandExecutor
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length == 1)
@@ -47,7 +48,8 @@ public class TicketsCommand implements CommandExecutor
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("page"))
@@ -66,7 +68,8 @@ public class TicketsCommand implements CommandExecutor
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("claim"))
@@ -88,13 +91,15 @@ public class TicketsCommand implements CommandExecutor
                 } else
                 {
 //                    sender.sendMessage("You have to be a player to use this command.");
-                    sender.sendMessage(main.getMessages().get(33));
+//                    sender.sendMessage(main.getMessages().get(33));
+                    main.sendMessage(sender, main.getMessages().get(33), -1);
                     return true;
                 }
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("unclaim"))
@@ -116,13 +121,15 @@ public class TicketsCommand implements CommandExecutor
                 } else
                 {
 //                    sender.sendMessage("You have to be a player to use this command.");
-                    sender.sendMessage(main.getMessages().get(33));
+//                    sender.sendMessage(main.getMessages().get(33));
+                    main.sendMessage(sender, main.getMessages().get(33), -1);
                     return true;
                 }
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("tp"))
@@ -144,13 +151,15 @@ public class TicketsCommand implements CommandExecutor
                 } else
                 {
 //                    sender.sendMessage("You have to be a player to use this command.");
-                    sender.sendMessage(main.getMessages().get(33));
+//                    sender.sendMessage(main.getMessages().get(33));
+                    main.sendMessage(sender, main.getMessages().get(33), -1);
                     return true;
                 }
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length > 2 && args[0].equalsIgnoreCase("close"))
@@ -178,13 +187,15 @@ public class TicketsCommand implements CommandExecutor
                 } else
                 {
 //                    sender.sendMessage("You have to be a player to use this command.");
-                    sender.sendMessage(main.getMessages().get(33));
+//                    sender.sendMessage(main.getMessages().get(33));
+                    main.sendMessage(sender, main.getMessages().get(33), -1);
                     return true;
                 }
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("comments"))
@@ -203,7 +214,8 @@ public class TicketsCommand implements CommandExecutor
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length >= 4 && args[0].equalsIgnoreCase("comments") && args[1].equalsIgnoreCase("add"))
@@ -230,7 +242,8 @@ public class TicketsCommand implements CommandExecutor
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else

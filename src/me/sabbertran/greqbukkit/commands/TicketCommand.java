@@ -31,13 +31,15 @@ public class TicketCommand implements CommandExecutor
                 } else
                 {
 //                    sender.sendMessage("You have to be a player to use this command.");
-                    sender.sendMessage(main.getMessages().get(33));
+//                    sender.sendMessage(main.getMessages().get(33));
+                    main.sendMessage(sender, main.getMessages().get(33), -1);
                     return true;
                 }
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("comments"))
@@ -56,7 +58,8 @@ public class TicketCommand implements CommandExecutor
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else if (args.length >= 4 && args[0].equalsIgnoreCase("comments") && args[1].equalsIgnoreCase("add"))
@@ -83,7 +86,8 @@ public class TicketCommand implements CommandExecutor
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         } else
@@ -103,7 +107,8 @@ public class TicketCommand implements CommandExecutor
                         text = text.substring(0, text.length() - 1);
                         int id = main.createTicket(p, text);
 //                        p.sendMessage("Ticket (ID: " + id + ") created. A staff member will have a look at your request as soon as possible.");
-                        p.sendMessage(main.translateDatabaseVariables(main.getMessages().get(0), id));
+//                        p.sendMessage(main.translateDatabaseVariables(main.getMessages().get(0), id));
+                        main.sendMessage(p, main.getMessages().get(0), id);
                         return true;
                     } else
                     {
@@ -112,13 +117,15 @@ public class TicketCommand implements CommandExecutor
                 } else
                 {
 //                    sender.sendMessage("You have to be a player to use this command.");
-                    sender.sendMessage(main.getMessages().get(23));
+//                    sender.sendMessage(main.getMessages().get(23));
+                    main.sendMessage(sender, main.getMessages().get(23), -1);
                     return true;
                 }
             } else
             {
 //                sender.sendMessage("You don't have permission to use this command.");
-                sender.sendMessage(main.getMessages().get(32));
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
         }
