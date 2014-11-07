@@ -856,7 +856,7 @@ public class GReqBukkit extends JavaPlugin
                 String status_extra = rs.getString("status_extra");
                 String author = rs.getString("author");
 
-                if (author.equals(p.getName()) || (status == 1 || status_extra.equals(p.getName())))
+                if (author.equals(p.getName()) || (status == 1 && status_extra.equals(p.getName())))
                 {
                     String comments = rs.getString("comments");
                     if (comments == null || comments.equals(""))
@@ -889,6 +889,7 @@ public class GReqBukkit extends JavaPlugin
                     ByteArrayOutputStream b = new ByteArrayOutputStream();
                     DataOutputStream out = new DataOutputStream(b);
                     out.writeUTF("new_comment");
+                    out.writeUTF(receiver);
                     out.writeUTF("" + staff);
                     out.writeUTF("" + id);
                     getServer().sendPluginMessage(this, "gReq", b.toByteArray());
@@ -935,7 +936,7 @@ public class GReqBukkit extends JavaPlugin
                             {
 //                            pl.sendMessage("A new comment has been created for ticket #" + id + ". please check it using /tickets comments #" + id);
 //                                pl.sendMessage(translateDatabaseVariables(messages.get(35), id));
-                                sendMessage(pl, messages.get(35), id);
+                                sendMessage(pl, messages.get(34), id);
                                 String comment = "";
                                 for (String s1 : comments_split)
                                 {
@@ -988,7 +989,7 @@ public class GReqBukkit extends JavaPlugin
                             {
 //                            pl.sendMessage("A new comment has been created for ticket #" + id + ". please check it using /tickets comments #" + id);
 //                                pl.sendMessage(translateDatabaseVariables(messages.get(35), id));
-                                sendMessage(pl, messages.get(35), id);
+                                sendMessage(pl, messages.get(34), id);
                                 String comment = "";
                                 for (String s1 : comments_split)
                                 {
@@ -1031,15 +1032,11 @@ public class GReqBukkit extends JavaPlugin
                     sendMessage(p, messages.get(36), id);
                     for (String s : comments_split)
                     {
-                        if (s.endsWith("#unseen#"))
-                        {
-                            s = s.substring(0, s.length() - 8);
-                            String player = s.split(":")[0];
-                            String msg = s.split(":")[1];
+                        String player = s.split(":")[0];
+                        String msg = s.split(":")[1];
 //                            p.sendMessage("%player: %msg");
 //                            p.sendMessage(messages.get(37).replace("%player", player).replace("%msg", msg));
-                            sendMessage(p, messages.get(37).replace("%player", player).replace("%msg", msg), id);
-                        }
+                        sendMessage(p, messages.get(37).replace("%player", player).replace("%msg", msg), id);
                     }
                 } else
                 {
