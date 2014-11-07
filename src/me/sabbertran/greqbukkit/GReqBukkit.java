@@ -246,15 +246,14 @@ public class GReqBukkit extends JavaPlugin
         readMessagesFromFile();
     }
 
-    public void sendMessage(CommandSender p, String message, int ticketID)
+    public void sendMessage(CommandSender p, String msg, int id)
     {
-        if (ticketID != -1)
+        if (id != -1)
         {
-            message = translateDatabaseVariables(message, ticketID);
-        }
-        for (String s : message.split("\n"))
+            p.sendMessage(translateDatabaseVariables(msg, id).split("%n"));
+        } else
         {
-            p.sendMessage(s);
+            p.sendMessage(msg.split("%n"));
         }
     }
 
@@ -312,7 +311,7 @@ public class GReqBukkit extends JavaPlugin
     {
         int id = -1;
         String loc = server_name + ":" + p.getWorld().getName() + ":" + p.getLocation().getBlockX() + "," + p.getLocation().getBlockY() + "," + p.getLocation().getBlockZ();
-        String date = new SimpleDateFormat("dd-MM-yyyy-HH-mm").format(new Date());
+        String date = new SimpleDateFormat("dd-MM-yyyy-HH-mm-ss").format(new Date());
         try
         {
             Class.forName("com.mysql.jdbc.Driver");
