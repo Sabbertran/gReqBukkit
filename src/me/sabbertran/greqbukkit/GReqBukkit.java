@@ -11,8 +11,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
@@ -33,6 +32,7 @@ public class GReqBukkit extends JavaPlugin
 {
 
     private Logger log = getLogger();
+    private SQLHandler sqlhandler;
 
     private String server_name;
     private int notificationInterval;
@@ -66,13 +66,12 @@ public class GReqBukkit extends JavaPlugin
         sql = (ArrayList<String>) getConfig().getStringList("gReq.SQL");
         pendingTeleports = new HashMap<String, Location>();
 
+        sqlhandler = new SQLHandler(this);
+
         //Create SQL table
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            con.createStatement().execute("CREATE TABLE IF NOT EXISTS `greq_tickets` (\n"
+            sqlhandler.getCurrentConnection().createStatement().execute("CREATE TABLE IF NOT EXISTS `greq_tickets` (\n"
                     + "`id` int(11) unsigned NOT NULL auto_increment,\n"
                     + "`author` varchar(265) NOT NULL,\n"
                     + "`text` text NOT NULL,\n"
@@ -84,8 +83,7 @@ public class GReqBukkit extends JavaPlugin
                     + "`answer` text,\n"
                     + "PRIMARY KEY  (`id`)\n"
                     + ")");
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -259,12 +257,10 @@ public class GReqBukkit extends JavaPlugin
 
     private String translateDatabaseVariables(String input, int id)
     {
+        String output = input.replace("%id", "" + id);
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
             if (rs.next())
             {
                 String author = rs.getString("author");
@@ -281,7 +277,7 @@ public class GReqBukkit extends JavaPlugin
                 String date_translated = write.format(parse);
                 String answer = rs.getString("answer");
 
-                String output = input.replace("%id", "" + id).replace("%author", author).replace("%text", text).replace("%server", server).replace("%world", world).replace("%coordinates", coordinates).replace("%date", date_translated);
+                output = output.replace("%author", author).replace("%text", text).replace("%server", server).replace("%world", world).replace("%coordinates", coordinates).replace("%date", date_translated);
                 if (answer != null)
                 {
                     output = output.replace("%answer", answer);
@@ -296,15 +292,13 @@ public class GReqBukkit extends JavaPlugin
                 {
                     output = output.replace("%status", messages.get(29).replace("%name", status_extra));
                 }
-                return output;
             }
             rs.close();
-            con.close();
-        } catch (ClassNotFoundException | SQLException | ParseException ex)
+        } catch (SQLException | ParseException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return null;
+        return output;
     }
 
     public int createTicket(Player p, String text)
@@ -314,23 +308,25 @@ public class GReqBukkit extends JavaPlugin
         String date = new SimpleDateFormat("dd-MM-yyyy-HH-mm-ss").format(new Date());
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            con.createStatement().execute("INSERT INTO greq_tickets (author, text, location, date, status) VALUES ('" + p.getName() + "', '" + text + "', '" + loc + "', '" + date + "', 0)");
-            ResultSet rs = con.createStatement().executeQuery("SELECT LAST_INSERT_ID() AS last_id FROM greq_tickets");
+            PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("INSERT INTO greq_tickets (author, text, location, date, status) VALUES (?, ?, ?, ?, 0)");
+            pst.setString(1, p.getName());
+            pst.setString(2, text);
+            pst.setString(3, loc);
+            pst.setString(4, date);
+            pst.execute();
+
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT LAST_INSERT_ID() AS last_id FROM greq_tickets");
             if (rs.next())
             {
                 id = rs.getInt("last_id");
             }
             rs.close();
-            con.close();
 
             ByteArrayOutputStream b = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(b);
             out.writeUTF("new_ticket");
             p.sendPluginMessage(this, "gReq", b.toByteArray());
-        } catch (ClassNotFoundException | SQLException | IOException ex)
+        } catch (SQLException | IOException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -342,10 +338,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets ORDER BY id DESC LIMIT 0, 1");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets ORDER BY id DESC LIMIT 0, 1");
             if (rs.next())
             {
                 int id = rs.getInt("id");
@@ -364,8 +357,7 @@ public class GReqBukkit extends JavaPlugin
                 }
             }
             rs.close();
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -375,13 +367,10 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE (status = '0' OR status = '1') ORDER BY id DESC LIMIT " + (amount * page - amount) + ", " + (amount * page));
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE (status = '0' OR status = '1') ORDER BY id DESC LIMIT " + (amount * page - amount) + ", " + (amount * page));
             if (rs.next())
             {
-                ResultSet rs_ = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE status = '0' OR status= '1'");
+                ResultSet rs_ = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE status = '0' OR status= '1'");
                 rs_.last();
                 int size = rs_.getRow();
                 rs_.close();
@@ -409,8 +398,7 @@ public class GReqBukkit extends JavaPlugin
                 }
             }
             rs.close();
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -420,10 +408,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
 //                p.sendMessage(translateDatabaseVariables(messages.get(12), id));
@@ -441,21 +426,17 @@ public class GReqBukkit extends JavaPlugin
                 sendMessage(p, messages.get(5), id);
             }
             rs.close();
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    public void closeTicket(Player p, int id, String answer)
+    public void closeTicket(CommandSender p, int id, String answer)
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 int status = rs.getInt("status");
@@ -464,7 +445,10 @@ public class GReqBukkit extends JavaPlugin
                 {
                     String author = rs.getString("author");
 
-                    con.createStatement().execute("UPDATE greq_tickets SET status = '3', status_extra = '" + p.getName() + "' , answer = '" + answer + "' WHERE id='" + id + "'");
+                    PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '3', status_extra = ? , answer = ? WHERE id='" + id + "'");
+                    pst.setString(1, p.getName());
+                    pst.setString(2, answer);
+                    pst.execute();
 
 //                    p.sendMessage("Closed ticket #" + id + " with answer: " + ChatColor.GRAY + answer);
 //                    p.sendMessage(translateDatabaseVariables(messages.get(17), id));
@@ -475,7 +459,13 @@ public class GReqBukkit extends JavaPlugin
                     out.writeUTF("answer");
                     out.writeUTF("" + id);
                     out.writeUTF(author);
-                    p.sendPluginMessage(this, "gReq", b.toByteArray());
+                    if (getServer().getOnlinePlayers().length > 0)
+                    {
+                        getServer().getOnlinePlayers()[0].sendPluginMessage(this, "gReq", b.toByteArray());
+                    } else
+                    {
+                        getServer().sendPluginMessage(this, "gReq", b.toByteArray());
+                    }
                 } else
                 {
 //                    p.sendMessage("The ticket #" + id + " is already closed");
@@ -488,8 +478,8 @@ public class GReqBukkit extends JavaPlugin
 //                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
                 sendMessage(p, messages.get(5), id);
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException | IOException ex)
+            rs.close();
+        } catch (SQLException | IOException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -499,10 +489,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 int status = rs.getInt("status");
@@ -519,12 +506,12 @@ public class GReqBukkit extends JavaPlugin
 
                     if (status == 3)
                     {
-                        con.createStatement().execute("UPDATE greq_tickets SET status = '2' WHERE id = '" + id + "'");
+                        sqlhandler.getCurrentConnection().createStatement().execute("UPDATE greq_tickets SET status = '2' WHERE id = '" + id + "'");
                     }
                 }
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -534,10 +521,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 String text = rs.getString("text");
@@ -552,8 +536,8 @@ public class GReqBukkit extends JavaPlugin
                     sendMessage(p, messages.get(18).replace("%name", status_extra), id);
                 }
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -563,10 +547,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             String server = "";
             String world = "";
             String coordinates = "";
@@ -576,7 +557,7 @@ public class GReqBukkit extends JavaPlugin
                 world = rs.getString("location").split(":")[1];
                 coordinates = rs.getString("location").split(":")[2];
             }
-            con.close();
+            rs.close();
 
 //            p.sendMessage("Teleporting to ticket #" + id);
 //            p.sendMessage(translateDatabaseVariables(messages.get(19), id));
@@ -599,7 +580,7 @@ public class GReqBukkit extends JavaPlugin
                 out_.writeUTF(server);
                 p.sendPluginMessage(this, "BungeeCord", out_.toByteArray());
             }
-        } catch (ClassNotFoundException | SQLException ex)
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -609,10 +590,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 String author = rs.getString("author");
@@ -620,7 +598,9 @@ public class GReqBukkit extends JavaPlugin
                 String status_extra = rs.getString("status_extra");
                 if (status == 0)
                 {
-                    con.createStatement().execute("UPDATE greq_tickets SET status = '1', status_extra = '" + p.getName() + "' WHERE id='" + id + "'");
+                    PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '1', status_extra = ? WHERE id='" + id + "'");
+                    pst.setString(1, p.getName());
+                    pst.execute();
 
                     ByteArrayDataOutput out = ByteStreams.newDataOutput();
                     out.writeUTF("claim");
@@ -643,8 +623,8 @@ public class GReqBukkit extends JavaPlugin
 //                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
                 sendMessage(p, messages.get(5), id);
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -654,10 +634,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 String author = rs.getString("author");
@@ -665,7 +642,9 @@ public class GReqBukkit extends JavaPlugin
                 String status_extra = rs.getString("status_extra");
                 if (status == 1)
                 {
-                    con.createStatement().execute("UPDATE greq_tickets SET status = '0' WHERE id = '" + id + "' AND status = '1' AND status_extra = '" + p.getName() + "'");
+                    PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '0' WHERE id = '" + id + "' AND status = '1' AND status_extra = ?");
+                    pst.setString(1, p.getName());
+                    pst.execute();
 
                     ByteArrayDataOutput out = ByteStreams.newDataOutput();
                     out.writeUTF("unclaim");
@@ -689,8 +668,8 @@ public class GReqBukkit extends JavaPlugin
                 p.sendMessage(translateDatabaseVariables(messages.get(5), id));
                 sendMessage(p, messages.get(5), id);
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -700,10 +679,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 String text = rs.getString("text");
@@ -717,8 +693,8 @@ public class GReqBukkit extends JavaPlugin
                     sendMessage(p, messages.get(1).replace("%name", status_extra), id);
                 }
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -728,10 +704,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 int status = rs.getInt("status");
@@ -744,8 +717,8 @@ public class GReqBukkit extends JavaPlugin
                     sendMessage(p, messages.get(21).replace("%name", status_extra), id);
                 }
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -755,10 +728,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 String text = rs.getString("text");
@@ -772,8 +742,8 @@ public class GReqBukkit extends JavaPlugin
                     sendMessage(p, messages.get(2).replace("%name", unclaimer), id);
                 }
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -783,10 +753,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id='" + id + "'");
             if (rs.next())
             {
                 String text = rs.getString("text");
@@ -800,8 +767,8 @@ public class GReqBukkit extends JavaPlugin
                     sendMessage(p, messages.get(24).replace("%name", unclaimer), id);
                 }
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -811,10 +778,10 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE author='" + p.getName() + "' AND (status = '0' OR status = '1')");
+            PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("SELECT * FROM greq_tickets WHERE author = ? AND (status = '0' OR status = '1')");
+            pst.setString(1, p.getName());
+            ResultSet rs = pst.executeQuery();
+
             if (rs.next())
             {
                 rs.last();
@@ -835,8 +802,8 @@ public class GReqBukkit extends JavaPlugin
 //                p.sendMessage(messages.get(31));
                 sendMessage(p, messages.get(31), -1);
             }
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -846,10 +813,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
             if (rs.next())
             {
                 int status = rs.getInt("status");
@@ -866,7 +830,10 @@ public class GReqBukkit extends JavaPlugin
                     {
                         comments = comments + ";;" + p.getName() + ":" + text + "#unseen#";
                     }
-                    con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comments + "' WHERE id = '" + id + "'");
+                    PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = '" + id + "'");
+                    pst.setString(1, comments);
+                    pst.execute();
+
 //                    p.sendMessage("Your comment has been saved.");
 //                    p.sendMessage(translateDatabaseVariables(messages.get(34), id));
                     sendMessage(p, messages.get(34), id);
@@ -895,14 +862,13 @@ public class GReqBukkit extends JavaPlugin
                     getServer().sendPluginMessage(this, "gReq", b.toByteArray());
                 }
 
-                rs.close();
-                con.close();
             } else
             {
 //                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
                 sendMessage(p, messages.get(5), id);
             }
-        } catch (ClassNotFoundException | SQLException | IOException ex)
+            rs.close();
+        } catch (SQLException | IOException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -912,10 +878,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
             if (rs.next())
             {
                 int status = rs.getInt("status");
@@ -947,15 +910,17 @@ public class GReqBukkit extends JavaPlugin
                                     comment = comment + s1 + ";;";
                                 }
                                 comment = comment.substring(0, comment.length() - 2);
-                                con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
+                                PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = '" + id + "'");
+                                pst.setString(1, comment);
+                                pst.execute();
                                 break;
                             }
                         }
                     }
                 }
             }
-
-        } catch (SQLException | ClassNotFoundException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -965,10 +930,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
             if (rs.next())
             {
                 int status = rs.getInt("status");
@@ -1000,15 +962,17 @@ public class GReqBukkit extends JavaPlugin
                                     comment = comment + s1 + ";;";
                                 }
                                 comment = comment.substring(0, comment.length() - 2);
-                                con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
+                                PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = '" + id + "'");
+                                pst.setString(1, comment);
+                                pst.execute();
                                 break;
                             }
                         }
                     }
                 }
             }
-
-        } catch (SQLException | ClassNotFoundException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -1018,10 +982,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "'");
             if (rs.next())
             {
                 String comments = rs.getString("comments");
@@ -1048,8 +1009,8 @@ public class GReqBukkit extends JavaPlugin
 //                p.sendMessage(translateDatabaseVariables(messages.get(5), id));
                 sendMessage(p, messages.get(5), id);
             }
-
-        } catch (SQLException | ClassNotFoundException ex)
+            rs.close();
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -1059,10 +1020,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + sql.get(0) + ":" + sql.get(1) + "/" + sql.get(2);
-            Connection con = DriverManager.getConnection(url, sql.get(3), sql.get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE status = '0' OR status = '1'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE status = '0' OR status = '1'");
             rs.last();
             int count = rs.getRow();
             if (count != 0)
@@ -1074,10 +1032,9 @@ public class GReqBukkit extends JavaPlugin
 //                p.sendMessage(messages.get(39));
                 sendMessage(p, messages.get(39), -1);
             }
-
             rs.close();
 
-        } catch (SQLException | ClassNotFoundException ex)
+        } catch (SQLException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -166,30 +166,20 @@ public class TicketsCommand implements CommandExecutor
         {
             if (sender.hasPermission("greq.tickets.close"))
             {
-                if (sender instanceof Player)
+                try
                 {
-                    Player p = (Player) sender;
-                    try
+                    int id = Integer.parseInt(args[1]);
+                    String answer = "";
+                    for (int i = 2; i < args.length; i++)
                     {
-                        int id = Integer.parseInt(args[1]);
-                        String answer = "";
-                        for (int i = 2; i < args.length; i++)
-                        {
-                            answer = answer + args[i] + " ";
-                        }
-                        answer = answer.substring(0, answer.length() - 1);
-                        main.closeTicket(p, id, answer);
-                        return true;
-                    } catch (NumberFormatException ex)
-                    {
-                        return false;
+                        answer = answer + args[i] + " ";
                     }
-                } else
-                {
-//                    sender.sendMessage("You have to be a player to use this command.");
-//                    sender.sendMessage(main.getMessages().get(33));
-                    main.sendMessage(sender, main.getMessages().get(33), -1);
+                    answer = answer.substring(0, answer.length() - 1);
+                    main.closeTicket(sender, id, answer);
                     return true;
+                } catch (NumberFormatException ex)
+                {
+                    return false;
                 }
             } else
             {
