@@ -24,7 +24,7 @@ public class SQLHandler
             if (connection == null || connection.isClosed())
             {
                 Class.forName("com.mysql.jdbc.Driver");
-                String url = "jdbc:mymain.getSql()://" + main.getSql().get(0) + ":" + main.getSql().get(1) + "/" + main.getSql().get(2);
+                String url = "jdbc:mysql://" + main.getSql().get(0) + ":" + main.getSql().get(1) + "/" + main.getSql().get(2);
                 connection = DriverManager.getConnection(url, main.getSql().get(3), main.getSql().get(4));
             }
         } catch (SQLException | ClassNotFoundException ex)
