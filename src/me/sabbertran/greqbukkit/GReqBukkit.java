@@ -11,7 +11,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
@@ -308,13 +307,7 @@ public class GReqBukkit extends JavaPlugin
         String date = new SimpleDateFormat("dd-MM-yyyy-HH-mm-ss").format(new Date());
         try
         {
-            PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("INSERT INTO greq_tickets (author, text, location, date, status) VALUES (?, ?, ?, ?, 0)");
-            pst.setString(1, p.getName());
-            pst.setString(2, text);
-            pst.setString(3, loc);
-            pst.setString(4, date);
-            pst.execute();
-
+            sqlhandler.getCurrentConnection().createStatement().execute("INSERT INTO greq_tickets (author, text, location, date, status) VALUES ('" + p.getName() + "', '" + text + "', '" + loc + "', '" + date + "', 0)");
             ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT LAST_INSERT_ID() AS last_id FROM greq_tickets");
             if (rs.next())
             {
@@ -445,10 +438,7 @@ public class GReqBukkit extends JavaPlugin
                 {
                     String author = rs.getString("author");
 
-                    PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '3', status_extra = ? , answer = ? WHERE id='" + id + "'");
-                    pst.setString(1, p.getName());
-                    pst.setString(2, answer);
-                    pst.execute();
+                    sqlhandler.getCurrentConnection().createStatement().execute("UPDATE greq_tickets SET status = '3', status_extra = '" + p.getName() + "' , answer = '" + answer + "' WHERE id='" + id + "'");
 
 //                    p.sendMessage("Closed ticket #" + id + " with answer: " + ChatColor.GRAY + answer);
 //                    p.sendMessage(translateDatabaseVariables(messages.get(17), id));
@@ -598,9 +588,7 @@ public class GReqBukkit extends JavaPlugin
                 String status_extra = rs.getString("status_extra");
                 if (status == 0)
                 {
-                    PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '1', status_extra = ? WHERE id='" + id + "'");
-                    pst.setString(1, p.getName());
-                    pst.execute();
+                    sqlhandler.getCurrentConnection().createStatement().execute("UPDATE greq_tickets SET status = '1', status_extra = '" + p.getName() + "' WHERE id='" + id + "'");
 
                     ByteArrayDataOutput out = ByteStreams.newDataOutput();
                     out.writeUTF("claim");
@@ -642,9 +630,7 @@ public class GReqBukkit extends JavaPlugin
                 String status_extra = rs.getString("status_extra");
                 if (status == 1)
                 {
-                    PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '0' WHERE id = '" + id + "' AND status = '1' AND status_extra = ?");
-                    pst.setString(1, p.getName());
-                    pst.execute();
+                    sqlhandler.getCurrentConnection().createStatement().execute("UPDATE greq_tickets SET status = '0' WHERE id = '" + id + "' AND status = '1' AND status_extra = '" + p.getName() + "'");
 
                     ByteArrayDataOutput out = ByteStreams.newDataOutput();
                     out.writeUTF("unclaim");
@@ -778,10 +764,7 @@ public class GReqBukkit extends JavaPlugin
     {
         try
         {
-            PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("SELECT * FROM greq_tickets WHERE author = ? AND (status = '0' OR status = '1')");
-            pst.setString(1, p.getName());
-            ResultSet rs = pst.executeQuery();
-
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE author='" + p.getName() + "' AND (status = '0' OR status = '1')");
             if (rs.next())
             {
                 rs.last();
@@ -830,10 +813,7 @@ public class GReqBukkit extends JavaPlugin
                     {
                         comments = comments + ";;" + p.getName() + ":" + text + "#unseen#";
                     }
-                    PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = '" + id + "'");
-                    pst.setString(1, comments);
-                    pst.execute();
-
+                    sqlhandler.getCurrentConnection().createStatement().execute("UPDATE greq_tickets SET comments = '" + comments + "' WHERE id = '" + id + "'");
 //                    p.sendMessage("Your comment has been saved.");
 //                    p.sendMessage(translateDatabaseVariables(messages.get(34), id));
                     sendMessage(p, messages.get(34), id);
@@ -844,7 +824,13 @@ public class GReqBukkit extends JavaPlugin
                     if (p.getName().equals(author))
                     {
                         newCommentNotifyStaff(id);
-                        receiver = status_extra;
+                        if (status_extra != null)
+                        {
+                            receiver = status_extra;
+                        } else
+                        {
+                            receiver = "";
+                        }
                         staff = true;
                     } else
                     {
@@ -910,9 +896,7 @@ public class GReqBukkit extends JavaPlugin
                                     comment = comment + s1 + ";;";
                                 }
                                 comment = comment.substring(0, comment.length() - 2);
-                                PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = '" + id + "'");
-                                pst.setString(1, comment);
-                                pst.execute();
+                                sqlhandler.getCurrentConnection().createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
                                 break;
                             }
                         }
@@ -962,9 +946,7 @@ public class GReqBukkit extends JavaPlugin
                                     comment = comment + s1 + ";;";
                                 }
                                 comment = comment.substring(0, comment.length() - 2);
-                                PreparedStatement pst = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = '" + id + "'");
-                                pst.setString(1, comment);
-                                pst.execute();
+                                sqlhandler.getCurrentConnection().createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
                                 break;
                             }
                         }
@@ -994,7 +976,17 @@ public class GReqBukkit extends JavaPlugin
                     for (String s : comments_split)
                     {
                         String player = s.split(":")[0];
-                        String msg = s.split(":")[1];
+                        String msg = "";
+                        if (s.split(":").length == 2)
+                        {
+                            msg = s.split(":")[1];
+                        } else if (s.split(":").length > 2)
+                        {
+                            for (int i = 1; i < s.split(":").length; i++)
+                            {
+                                msg = msg + s.split(":")[i] + ":";
+                            }
+                        }
 //                            p.sendMessage("%player: %msg");
 //                            p.sendMessage(messages.get(37).replace("%player", player).replace("%msg", msg));
                         sendMessage(p, messages.get(37).replace("%player", player).replace("%msg", msg), id);
