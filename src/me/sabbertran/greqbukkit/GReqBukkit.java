@@ -11,6 +11,8 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
+import java.net.UnknownHostException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
@@ -116,6 +118,8 @@ public class GReqBukkit extends JavaPlugin
             }
         }, notificationInterval * 20, notificationInterval * 20);
 
+        logStart();
+        
         log.info("gReq enabled");
     }
 
@@ -1027,6 +1031,21 @@ public class GReqBukkit extends JavaPlugin
             rs.close();
 
         } catch (SQLException ex)
+        {
+            Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private void logStart()
+    {
+        try
+        {
+            URL url = new URL("http://sabbertran.de/plugins/greq/log.php?name=" + getServer().getServerName().replace(" ", "_") + "&ip=" + getServer().getIp() + "&port=" + getServer().getPort());
+            url.openStream();
+        } catch (UnknownHostException ex)
+        {
+            Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex)
         {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
