@@ -2,6 +2,7 @@ package me.sabbertran.greqbukkit;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -37,6 +38,7 @@ public class GReqBukkit extends JavaPlugin
 
     private String server_name;
     private int notificationInterval;
+    private boolean notifyClaimedTickets;
     private ArrayList<String> sql;
     private ArrayList<String> messages;
 
@@ -55,6 +57,7 @@ public class GReqBukkit extends JavaPlugin
     {
         getConfig().addDefault("gReq.BungeeServerName", getServer().getName());
         getConfig().addDefault("gReq.NotificationInterval", 120);
+        getConfig().addDefault("gReq.NotifiyClaimedTickets", false);
         getConfig().addDefault("gReq.SQL", new String[]
         {
             "Adress", "Port", "Database", "User", "Password"
@@ -64,6 +67,7 @@ public class GReqBukkit extends JavaPlugin
 
         server_name = getConfig().getString("gReq.BungeeServerName");
         notificationInterval = getConfig().getInt("gReq.NotificationInterval");
+        notifyClaimedTickets = getConfig().getBoolean("gReq.NotifiyClaimedTickets");
         sql = (ArrayList<String>) getConfig().getStringList("gReq.SQL");
         pendingTeleports = new HashMap<String, Location>();
 
@@ -119,7 +123,7 @@ public class GReqBukkit extends JavaPlugin
         }, notificationInterval * 20, notificationInterval * 20);
 
         logStart();
-        
+
         log.info("gReq enabled");
     }
 
@@ -148,7 +152,7 @@ public class GReqBukkit extends JavaPlugin
         {
             setupMessages();
         }
-        if (messages.size() != 41)
+        if (messages.size() != 43)
         {
             setupMessages();
         }
@@ -223,9 +227,18 @@ public class GReqBukkit extends JavaPlugin
         temp.add("# Notifications #");
         temp.add("There are currently no open tickets.");
         temp.add("There are currently %amount open tickets, check them with /tickets");
+        //Later added messages - new messages system coming soon
+        temp.add("Could not reopen ticket #%id");
+        temp.add("Successfully reopened ticket #%id");
 
         try
         {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy-HH-mm");
+            String renamed_messagesFile = "plugins/gReqBukkit/messages_" + sdf.format(new Date()) + ".yml";
+            Files.move(messagesFile, new File(renamed_messagesFile));
+            log.info("Creating a new messages file because your old one was outdated.");
+            log.info("The old messages file has been renamed to " + renamed_messagesFile);
+
             messagesFile.delete();
             messagesFile.createNewFile();
             PrintWriter pw = new PrintWriter(new FileOutputStream(messagesFile), true);
@@ -291,7 +304,7 @@ public class GReqBukkit extends JavaPlugin
                 } else if (status == 1)
                 {
                     output = output.replace("%status", messages.get(28).replace("%name", status_extra));
-                } else if (status == 2)
+                } else if (status == 2 || status == 3)
                 {
                     output = output.replace("%status", messages.get(29).replace("%name", status_extra));
                 }
@@ -764,11 +777,19 @@ public class GReqBukkit extends JavaPlugin
         }
     }
 
-    public void sendOwnTicketList(Player p)
+    public void sendOwnTicketList(Player p, boolean closed)
     {
+        String sql_cmd = "";
+        if (!closed)
+        {
+            sql_cmd = "SELECT * FROM greq_tickets WHERE author='" + p.getName() + "' AND (status = '0' OR status = '1')";
+        } else
+        {
+            sql_cmd = "SELECT * FROM greq_tickets WHERE author='" + p.getName() + "'";
+        }
         try
         {
-            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE author='" + p.getName() + "' AND (status = '0' OR status = '1')");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery(sql_cmd);
             if (rs.next())
             {
                 rs.last();
@@ -1014,9 +1035,17 @@ public class GReqBukkit extends JavaPlugin
 
     public void sendOpenTicketInfo(Player p, boolean includeZero)
     {
+        String sql_cmd = "";
+        if (notifyClaimedTickets)
+        {
+            sql_cmd = "SELECT * FROM greq_tickets WHERE status = '0' OR status = '1'";
+        } else
+        {
+            sql_cmd = "SELECT * FROM greq_tickets WHERE status = '0'";
+        }
         try
         {
-            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE status = '0' OR status = '1'");
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery(sql_cmd);
             rs.last();
             int count = rs.getRow();
             if (count != 0)
@@ -1035,7 +1064,73 @@ public class GReqBukkit extends JavaPlugin
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
+    public boolean reopenTicket(int id)
+    {
+        try
+        {
+            ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE id = '" + id + "' AND (status = '2' OR status = '3')");
+            if (rs.next())
+            {
+                sqlhandler.getCurrentConnection().createStatement().execute("UPDATE greq_tickets SET status = 0, answer = NULL WHERE id = '" + id + "'");
+                return true;
+            }
+            rs.close();
+
+        } catch (SQLException ex)
+        {
+            Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return false;
+    }
+
+    public int getLevenshteinDistance(String s0, String s1)
+    {
+        int len0 = s0.length() + 1;
+        int len1 = s1.length() + 1;
+
+        // the array of distances                                                       
+        int[] cost = new int[len0];
+        int[] newcost = new int[len0];
+
+        // initial cost of skipping prefix in String s0                                 
+        for (int i = 0; i < len0; i++)
+        {
+            cost[i] = i;
+        }
+
+        // dynamicaly computing the array of distances                                  
+        // transformation cost for each letter in s1                                    
+        for (int j = 1; j < len1; j++)
+        {
+            // initial cost of skipping prefix in String s1                             
+            newcost[0] = j;
+
+            // transformation cost for each letter in s0                                
+            for (int i = 1; i < len0; i++)
+            {
+                // matching current letters in both strings                             
+                int match = (s0.charAt(i - 1) == s1.charAt(j - 1)) ? 0 : 1;
+
+                // computing cost for each transformation                               
+                int cost_replace = cost[i - 1] + match;
+                int cost_insert = cost[i] + 1;
+                int cost_delete = newcost[i - 1] + 1;
+
+                // keep minimum cost                                                    
+                newcost[i] = Math.min(Math.min(cost_insert, cost_delete), cost_replace);
+            }
+
+            // swap cost/newcost arrays                                                 
+            int[] swap = cost;
+            cost = newcost;
+            newcost = swap;
+        }
+
+        // the distance is the cost for transforming all letters in both strings        
+        return cost[len0 - 1];
+    }
+
     private void logStart()
     {
         try

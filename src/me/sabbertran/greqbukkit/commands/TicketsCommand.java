@@ -162,6 +162,26 @@ public class TicketsCommand implements CommandExecutor
                 main.sendMessage(sender, main.getMessages().get(32), -1);
                 return true;
             }
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("close"))
+        {
+            if (sender.hasPermission("greq.tickets.close"))
+            {
+                try
+                {
+                    int id = Integer.parseInt(args[1]);
+                    main.closeTicket(sender, id, "");
+                    return true;
+                } catch (NumberFormatException ex)
+                {
+                    return false;
+                }
+            } else
+            {
+//                sender.sendMessage("You don't have permission to use this command.");
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
+                return true;
+            }
         } else if (args.length > 2 && args[0].equalsIgnoreCase("close"))
         {
             if (sender.hasPermission("greq.tickets.close"))
@@ -225,6 +245,34 @@ public class TicketsCommand implements CommandExecutor
 
                     main.addTicketComment(sender, id, comment);
                     return true;
+                } catch (NumberFormatException ex)
+                {
+                    return false;
+                }
+            } else
+            {
+//                sender.sendMessage("You don't have permission to use this command.");
+//                sender.sendMessage(main.getMessages().get(32));
+                main.sendMessage(sender, main.getMessages().get(32), -1);
+                return true;
+            }
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("reopen"))
+        {
+            if (sender.hasPermission("greq.tickets.reopen"))
+            {
+                try
+                {
+                    int id = Integer.parseInt(args[1]);
+
+                    if (main.reopenTicket(id))
+                    {
+                        main.sendMessage(sender, main.getMessages().get(42), id);
+                        return true;
+                    } else
+                    {
+                        main.sendMessage(sender, main.getMessages().get(41), id);
+                        return true;
+                    }
                 } catch (NumberFormatException ex)
                 {
                     return false;
