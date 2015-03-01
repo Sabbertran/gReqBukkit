@@ -31,7 +31,7 @@ public class Events implements Listener
             Class.forName("com.mysql.jdbc.Driver");
             String url = "jdbc:mysql://" + main.getSql().get(0) + ":" + main.getSql().get(1) + "/" + main.getSql().get(2);
             Connection con = DriverManager.getConnection(url, main.getSql().get(3), main.getSql().get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE author='" + p.getName() + "' AND status LIKE '%unseen%'");
+            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE author='" + p.getName() + "' AND status = '3'");
             while (rs.next())
             {
                 int id = rs.getInt("id");
