@@ -12,8 +12,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.URL;
-import java.net.UnknownHostException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
@@ -121,8 +119,6 @@ public class GReqBukkit extends JavaPlugin
                 }
             }
         }, notificationInterval * 20, notificationInterval * 20);
-
-        logStart();
 
         log.info("gReq enabled");
     }
@@ -380,10 +376,9 @@ public class GReqBukkit extends JavaPlugin
             ResultSet rs = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE (status = '0' OR status = '1') ORDER BY id DESC LIMIT " + (amount * page - amount) + ", " + (amount * page));
             if (rs.next())
             {
-                ResultSet rs_ = sqlhandler.getCurrentConnection().createStatement().executeQuery("SELECT * FROM greq_tickets WHERE status = '0' OR status= '1'");
-                rs_.last();
-                int size = rs_.getRow();
-                rs_.close();
+                rs.last();
+                int size = rs.getRow();
+                rs.first();
 //                p.sendMessage("There are currently " + size + " open tickets. Showing page " + page + "/" + (size / amount + 1));
 //                p.sendMessage(messages.get(8).replace("%tickets", "" + size).replace("%page", "" + page).replace("%maxpage", "" + (size / amount + 1)));
                 sendMessage(p, messages.get(8).replace("%tickets", "" + size).replace("%page", "" + page).replace("%maxpage", "" + (size / amount + 1)), -1);
@@ -1129,21 +1124,6 @@ public class GReqBukkit extends JavaPlugin
 
         // the distance is the cost for transforming all letters in both strings        
         return cost[len0 - 1];
-    }
-
-    private void logStart()
-    {
-        try
-        {
-            URL url = new URL("http://sabbertran.de/plugins/greq/log.php?name=" + getServer().getServerName().replace(" ", "_") + "&ip=" + getServer().getIp() + "&port=" + getServer().getPort());
-            url.openStream();
-        } catch (UnknownHostException ex)
-        {
-            Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex)
-        {
-            Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
 
     public ArrayList<String> getSql()
