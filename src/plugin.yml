@@ -1,6 +1,6 @@
 name: gReqBukkit
 main: me.sabbertran.greqbukkit.GReqBukkit
-version: 1.2.1
+version: 1.3
 website: http://www.sabbertran.de
 author: Sabbertran
 description: BungeeCord Ticket Plugin
@@ -10,5 +10,5 @@ commands:
     usage: "Usage:\n/ticket [Your concern]\n/ticket list\n/ticket comments #\n/ticket comments add # [message]"
   tickets:
     description: Staff comamnd
-    usage: "Usage:\n/tickets\n/tickets page #\n/tickets #\n/tickets claim #\n/tickets unclaim #\n/tickets tp #\n/tickets close # [message]\n/tickets comments #\n/tickets comments add # [message]"
+    usage: "Usage:\n/tickets\n/tickets page #\n/tickets #\n/tickets claim #\n/tickets unclaim #\n/tickets tp #\n/tickets close # [message]\n/tickets comments #\n/tickets comments add # [message]\n/tickets purge all/closed/confirm"
     

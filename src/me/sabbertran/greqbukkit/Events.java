@@ -1,7 +1,6 @@
 package me.sabbertran.greqbukkit;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -10,30 +9,25 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
-public class Events implements Listener
-{
+public class Events implements Listener {
 
     private GReqBukkit main;
 
-    public Events(GReqBukkit main)
-    {
+    public Events(GReqBukkit main) {
         this.main = main;
     }
 
     @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent ev)
-    {
+    public void onPlayerJoin(PlayerJoinEvent ev) {
         final Player p = ev.getPlayer();
 
-        try
-        {
-            Class.forName("com.mysql.jdbc.Driver");
-            String url = "jdbc:mysql://" + main.getSql().get(0) + ":" + main.getSql().get(1) + "/" + main.getSql().get(2);
-            Connection con = DriverManager.getConnection(url, main.getSql().get(3), main.getSql().get(4));
-            ResultSet rs = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE author='" + p.getName() + "' AND status = '3'");
-            while (rs.next())
-            {
+        try {
+            PreparedStatement pst = main.getSqlhandler().getCurrentConnection().prepareStatement("SELECT * FROM greq_tickets WHERE author = ? AND status = '3'");
+            pst.setString(1, p.getName());
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
                 int id = rs.getInt("id");
                 int status = rs.getInt("status");
                 String status_extra = rs.getString("status");
@@ -44,39 +38,41 @@ public class Events implements Listener
 //                p.sendMessage("Answer: " + ChatColor.GRAY + answer);
                 main.sendMessage(p, main.getMessages().get(16).replace("%name", status_extra), id);
 
-                con.createStatement().execute("UPDATE greq_tickets SET status = '2' WHERE id = '" + id + "'");
+                PreparedStatement pst1 = main.getSqlhandler().getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '2' WHERE id = ?");
+                pst1.setInt(1, id);
+                pst1.execute();
             }
+            rs.close();
 
-            ResultSet rs2 = con.createStatement().executeQuery("SELECT * FROM greq_tickets WHERE author = '" + p.getName() + "' OR status_extra = '" + p.getName() + "'");
-            while (rs2.next())
-            {
+            PreparedStatement pst2 = main.getSqlhandler().getCurrentConnection().prepareStatement("SELECT * FROM greq_tickets WHERE author = ? OR status_extra = ?");
+            pst2.setString(2, p.getName());
+            pst2.setString(3, p.getName());
+            ResultSet rs2 = pst2.executeQuery();
+            while (rs2.next()) {
                 int id = rs2.getInt("id");
                 String comments = rs2.getString("comments");
-                if (comments != null)
-                {
+                if (comments != null) {
                     String[] comments_split = comments.split(";;");
-                    for (String s : comments_split)
-                    {
-                        if (s.endsWith("#unseen#"))
-                        {
+                    for (String s : comments_split) {
+                        if (s.endsWith("#unseen#")) {
                             s = s.substring(0, s.length() - 8);
                             String player = s.split(":")[0];
-                            if (!player.equals(p.getName()))
-                            {
+                            if (!player.equals(p.getName())) {
 //                            p.sendMessage("A new comment has been created for ticket #" + id + ". please check it using /tickets comments #" + id);
 //                                p.sendMessage(main.translateDatabaseVariables(main.getMessages().get(35), id));
                                 main.sendMessage(p, main.getMessages().get(35), id);
                                 String comment = "";
-                                for (String s1 : comments_split)
-                                {
-                                    if (s1.endsWith("#unseen#"))
-                                    {
+                                for (String s1 : comments_split) {
+                                    if (s1.endsWith("#unseen#")) {
                                         s1 = s1.substring(0, s1.length() - 8);
                                     }
                                     comment = comment + s1 + ";;";
                                 }
                                 comment = comment.substring(0, comment.length() - 2);
-                                con.createStatement().execute("UPDATE greq_tickets SET comments = '" + comment + "' WHERE id = '" + id + "'");
+                                PreparedStatement pst3 = main.getSqlhandler().getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = ?");
+                                pst3.setString(1, comment);
+                                pst3.setInt(2, id);
+                                pst3.execute();
                             }
                         }
                     }
@@ -84,28 +80,30 @@ public class Events implements Listener
             }
 
             rs2.close();
-            con.close();
-        } catch (ClassNotFoundException | SQLException ex)
-        {
+        } catch (SQLException ex) {
             Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        if (p.hasPermission("greq.notify"))
-        {
+        if (p.hasPermission("greq.notify")) {
             main.sendOpenTicketInfo(p, true);
         }
 
-        if (main.getPendingTeleports().containsKey(p.getName()))
-        {
-            main.getServer().getScheduler().scheduleSyncDelayedTask(main, new Runnable()
-            {
+        if (main.getPendingTeleports().containsKey(p.getName())) {
+            main.getServer().getScheduler().scheduleSyncDelayedTask(main, new Runnable() {
                 @Override
-                public void run()
-                {
+                public void run() {
                     p.teleport(main.getPendingTeleports().get(p.getName()));
                     main.getPendingTeleports().remove(p.getName());
                 }
             }, 10L);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent ev) {
+        Player p = ev.getPlayer();
+        if (main.getPendingPurges().containsKey(p.getName())) {
+            main.getPendingPurges().remove(p.getName());
         }
     }
 }
