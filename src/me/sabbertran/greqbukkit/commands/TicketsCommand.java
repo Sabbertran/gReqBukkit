@@ -199,7 +199,7 @@ public class TicketsCommand implements CommandExecutor {
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("purge")) {
             if (args[1].equalsIgnoreCase("all")) {
-                if (sender.hasPermission("tickets.purge.all")) {
+                if (sender.hasPermission("greq.tickets.purge.all")) {
                     main.getPendingPurges().put(sender.getName(), 0);
                     main.sendMessage(sender, main.getMessages().get(44), -1);
                     return true;
@@ -208,7 +208,7 @@ public class TicketsCommand implements CommandExecutor {
                     return true;
                 }
             } else if (args[1].equalsIgnoreCase("closed")) {
-                if (sender.hasPermission("tickets.purge.closed")) {
+                if (sender.hasPermission("greq.tickets.purge.closed")) {
                     main.getPendingPurges().put(sender.getName(), 1);
                     main.sendMessage(sender, main.getMessages().get(45), -1);
                     return true;
@@ -221,7 +221,7 @@ public class TicketsCommand implements CommandExecutor {
                 return true;
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("purge") && args[1].equalsIgnoreCase("confirm")) {
-            if (sender.hasPermission("tickets.purge.confirm")) {
+            if (sender.hasPermission("greq.tickets.purge.confirm")) {
                 if (main.getPendingPurges().containsKey(sender.getName())) {
                     main.purgeTickets(main.getPendingPurges().get(sender.getName()));
                     main.getPendingPurges().remove(sender.getName());
