@@ -199,23 +199,38 @@ public class TicketsCommand implements CommandExecutor {
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("purge")) {
             if (args[1].equalsIgnoreCase("all")) {
-                main.getPendingPurges().put(sender.getName(), 0);
-                main.sendMessage(sender, main.getMessages().get(44), -1);
-                return true;
+                if (sender.hasPermission("tickets.purge.all")) {
+                    main.getPendingPurges().put(sender.getName(), 0);
+                    main.sendMessage(sender, main.getMessages().get(44), -1);
+                    return true;
+                } else {
+                    main.sendMessage(sender, main.getMessages().get(32), -1);
+                    return true;
+                }
             } else if (args[1].equalsIgnoreCase("closed")) {
-                main.getPendingPurges().put(sender.getName(), 1);
-                main.sendMessage(sender, main.getMessages().get(45), -1);
-                return true;
+                if (sender.hasPermission("tickets.purge.closed")) {
+                    main.getPendingPurges().put(sender.getName(), 1);
+                    main.sendMessage(sender, main.getMessages().get(45), -1);
+                    return true;
+                } else {
+                    main.sendMessage(sender, main.getMessages().get(32), -1);
+                    return true;
+                }
             } else {
                 main.sendMessage(sender, main.getMessages().get(46), -1);
                 return true;
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("purge") && args[1].equalsIgnoreCase("confirm")) {
-            if (main.getPendingPurges().containsKey(sender.getName())) {
-                main.purgeTickets(main.getPendingPurges().get(sender.getName()));
-                main.getPendingPurges().remove(sender.getName());
-                main.sendMessage(sender, main.getMessages().get(43), -1);
-                return true;
+            if (sender.hasPermission("tickets.purge.confirm")) {
+                if (main.getPendingPurges().containsKey(sender.getName())) {
+                    main.purgeTickets(main.getPendingPurges().get(sender.getName()));
+                    main.getPendingPurges().remove(sender.getName());
+                    main.sendMessage(sender, main.getMessages().get(43), -1);
+                    return true;
+                } else {
+                    main.sendMessage(sender, main.getMessages().get(32), -1);
+                    return true;
+                }
             } else {
                 main.sendMessage(sender, main.getMessages().get(47), -1);
                 return true;
