@@ -422,10 +422,10 @@ public class GReqBukkit extends JavaPlugin {
                     String author = rs.getString("author");
 
                     PreparedStatement pst1 = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '3', status_extra = ?, answer = ? WHERE id = ?");
-                    pst.setString(1, p.getName());
-                    pst.setString(2, answer);
-                    pst.setInt(3, id);
-                    pst.execute();
+                    pst1.setString(1, p.getName());
+                    pst1.setString(2, answer);
+                    pst1.setInt(3, id);
+                    pst1.execute();
 
 //                    p.sendMessage("Closed ticket #" + id + " with answer: " + ChatColor.GRAY + answer);
 //                    p.sendMessage(translateDatabaseVariables(messages.get(17), id));
@@ -477,7 +477,7 @@ public class GReqBukkit extends JavaPlugin {
                     if (status == 3) {
                         PreparedStatement pst1 = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '2' WHERE id = ?");
                         pst1.setInt(1, id);
-                        pst.execute();
+                        pst1.execute();
                     }
                 }
             }
