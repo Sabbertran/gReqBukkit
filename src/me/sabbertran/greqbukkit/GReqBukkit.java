@@ -24,6 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.sabbertran.greqbukkit.commands.TicketCommand;
 import me.sabbertran.greqbukkit.commands.TicketsCommand;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -52,11 +53,11 @@ public class GReqBukkit extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        getConfig().addDefault("gReq.BungeeServerName", getServer().getName());
+        getConfig().addDefault("gReq.BungeeServerName", getServer().getServerName());
         getConfig().addDefault("gReq.NotificationInterval", 120);
         getConfig().addDefault("gReq.NotifiyClaimedTickets", false);
         getConfig().addDefault("gReq.SQL", new String[]{
-            "Adress", "Port", "Database", "User", "Password"
+            "Address", "Port", "Database", "User", "Password"
         });
         getConfig().options().copyDefaults(true);
         saveConfig();
@@ -70,22 +71,26 @@ public class GReqBukkit extends JavaPlugin {
 
         sqlhandler = new SQLHandler(this);
 
-        //Create SQL table
-        try {
-            sqlhandler.getCurrentConnection().createStatement().execute("CREATE TABLE IF NOT EXISTS `greq_tickets` (\n"
-                    + "`id` int(11) unsigned NOT NULL auto_increment,\n"
-                    + "`author` varchar(265) NOT NULL,\n"
-                    + "`text` text NOT NULL,\n"
-                    + "`location` text NOT NULL,\n"
-                    + "`date` varchar(265) NOT NULL,\n"
-                    + "`status` int(11) NOT NULL,\n"
-                    + "`status_extra` varchar(265),\n"
-                    + "`comments` text,\n"
-                    + "`answer` text,\n"
-                    + "PRIMARY KEY  (`id`)\n"
-                    + ")");
-        } catch (SQLException ex) {
-            Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
+        if (!sql.get(0).equals("Address") && !sql.get(1).equals("Port") && !sql.get(2).equals("Database") && !sql.get(3).equals("User") && !sql.get(4).equals("Password")) {
+            //Create SQL table
+            try {
+                sqlhandler.getCurrentConnection().createStatement().execute("CREATE TABLE IF NOT EXISTS `greq_tickets` (\n"
+                        + "`id` int(11) unsigned NOT NULL auto_increment,\n"
+                        + "`author` varchar(265) NOT NULL,\n"
+                        + "`text` text NOT NULL,\n"
+                        + "`location` text NOT NULL,\n"
+                        + "`date` varchar(265) NOT NULL,\n"
+                        + "`status` int(11) NOT NULL,\n"
+                        + "`status_extra` varchar(265),\n"
+                        + "`comments` text,\n"
+                        + "`answer` text,\n"
+                        + "PRIMARY KEY  (`id`)\n"
+                        + ")");
+            } catch (SQLException ex) {
+                Logger.getLogger(GReqBukkit.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else {
+            log.info("Please set your MySQL data in the config file!");
         }
 
         messages = new ArrayList<String>();
@@ -146,42 +151,42 @@ public class GReqBukkit extends JavaPlugin {
         temp.add("# Ticket creation user info #");
         temp.add("Ticket (ID: %id) created. A staff member will have a look at your request as soon as possible.");
         temp.add("# Ticket claim user info #");
-        temp.add("%name is now handling your request #%id (§7%text§f)");
+        temp.add("%name is now handling your request #%id (&7%text&f)");
         temp.add("# Ticket unclaim user info #");
-        temp.add("%name is no longer handling your request #%id (§7%text§f)");
+        temp.add("%name is no longer handling your request #%id (&7%text&f)");
         temp.add("# User ticket list #");
         temp.add("You currently have %tickets open tickets:");
-        temp.add("[#%id] §7%text§f (%status)");
+        temp.add("[#%id] &7%text&f (%status)");
         //Staff messages
         temp.add("# Ticket Info #");
         temp.add("The ticket #%id does not exist.");
         temp.add("# Ticket creation staff info #");
         temp.add("A new Ticket has been created:");
-        temp.add("[#%id] %author (%server): §7%text");
+        temp.add("[#%id] %author (%server): &7%text");
         temp.add("# Ticket list #");
         temp.add("There are currently %tickets open tickets. Showing page %page/%maxpage");
-        temp.add("[#%id Status: %status] %author (%server, %world, %coordinates): §7%text");
+        temp.add("[#%id Status: %status] %author (%server, %world, %coordinates): &7%text");
         temp.add("There are currently no open tickets.");
         temp.add("There are not enough open tickets to fill this page");
         temp.add("# Ticket info #");
         temp.add("[#%id] - %author - %date - %status");
         temp.add("Server: %server, World: %world, Coordinates: %coordinates");
-        temp.add("§7%text");
+        temp.add("&7%text");
         temp.add("# Ticket closed user info #");
-        temp.add("%name closed your ticket #%id (§7%text§f)");
-        temp.add("Answer: §7%answer");
+        temp.add("%name closed your ticket #%id (&7%text&f)");
+        temp.add("Answer: &7%answer");
         temp.add("# Ticket closed staff info #");
-        temp.add("Closed ticket #%id with answer: §7%answer");
-        temp.add("%name closed ticket #%id (§7%text§f) with answer: §7%answer");
+        temp.add("Closed ticket #%id with answer: &7%answer");
+        temp.add("%name closed ticket #%id (&7%text&f) with answer: &7%answer");
         temp.add("# Teleportation info #");
         temp.add("Teleporting to ticket #%id");
         temp.add("# Ticket claim info #");
-        temp.add("You are now handling ticket #%id (§7%text§f)");
-        temp.add("%name is now handling ticket #%id (§7%text§f)");
+        temp.add("You are now handling ticket #%id (&7%text&f)");
+        temp.add("%name is now handling ticket #%id (&7%text&f)");
         temp.add("The ticket #%id is not open");
         temp.add("# Ticket unclaim info #");
-        temp.add("You are no longer handling ticket #%id (§7%text§f)");
-        temp.add("%name is no longer handling ticket #%id (§7%text§f)");
+        temp.add("You are no longer handling ticket #%id (&7%text&f)");
+        temp.add("%name is no longer handling ticket #%id (&7%text&f)");
         temp.add("The ticket #%id is not claimed by you");
         temp.add("# Ticket close info #");
         temp.add("The ticket #%id is already closed");
@@ -217,13 +222,16 @@ public class GReqBukkit extends JavaPlugin {
         temp.add("You have no pending purges.");
 
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy-HH-mm");
-            String renamed_messagesFile = "plugins/gReqBukkit/messages_" + sdf.format(new Date()) + ".yml";
-            Files.move(messagesFile, new File(renamed_messagesFile));
-            log.info("Creating a new messages file because your old one was outdated.");
-            log.info("The old messages file has been renamed to " + renamed_messagesFile);
-
-            messagesFile.delete();
+            if (messagesFile.exists()) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy-HH-mm");
+                String renamed_messagesFile = "plugins/gReqBukkit/messages_" + sdf.format(new Date()) + ".yml";
+                Files.move(messagesFile, new File(renamed_messagesFile));
+                log.info("Creating a new messages file because your old one was outdated.");
+                log.info("The old messages file has been renamed to " + renamed_messagesFile);
+                messagesFile.delete();
+            } else {
+                messagesFile.getParentFile().mkdirs();
+            }
             messagesFile.createNewFile();
             PrintWriter pw = new PrintWriter(new FileOutputStream(messagesFile), true);
             pw.println("# Do not change the order of the messages, otherwise they will be messed up ingame! #");
@@ -242,6 +250,7 @@ public class GReqBukkit extends JavaPlugin {
     }
 
     public void sendMessage(CommandSender p, String msg, int id) {
+        msg = ChatColor.translateAlternateColorCodes('&', msg);
         if (id != -1) {
             p.sendMessage(translateDatabaseVariables(msg, id).split("%n"));
         } else {
@@ -551,7 +560,7 @@ public class GReqBukkit extends JavaPlugin {
                 int status = rs.getInt("status");
                 String status_extra = rs.getString("status_extra");
                 if (status == 0) {
-                    PreparedStatement pst1 = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '1', status_extra = '" + p.getName() + "' WHERE id='" + id + "'");
+                    PreparedStatement pst1 = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET status = '1', status_extra = ? WHERE id = ?");
                     pst1.setString(1, p.getName());
                     pst1.setInt(2, id);
                     pst1.execute();
@@ -986,7 +995,7 @@ public class GReqBukkit extends JavaPlugin {
         } else {
             return false;
         }
-        
+
         try {
             sqlhandler.getCurrentConnection().createStatement().execute(sql_cmd);
             return true;
