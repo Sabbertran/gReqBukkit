@@ -45,8 +45,8 @@ public class Events implements Listener {
             rs.close();
 
             PreparedStatement pst2 = main.getSqlhandler().getCurrentConnection().prepareStatement("SELECT * FROM greq_tickets WHERE author = ? OR status_extra = ?");
+            pst2.setString(1, p.getName());
             pst2.setString(2, p.getName());
-            pst2.setString(3, p.getName());
             ResultSet rs2 = pst2.executeQuery();
             while (rs2.next()) {
                 int id = rs2.getInt("id");
