@@ -69,7 +69,7 @@ public class Events implements Listener {
                                     comment = comment + s1 + ";;";
                                 }
                                 comment = comment.substring(0, comment.length() - 2);
-                                PreparedStatement pst3 = main.getSqlhandler().getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comment = ? WHERE id = ?");
+                                PreparedStatement pst3 = main.getSqlhandler().getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = ?");
                                 pst3.setString(1, comment);
                                 pst3.setInt(2, id);
                                 pst3.execute();
