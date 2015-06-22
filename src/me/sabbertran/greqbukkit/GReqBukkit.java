@@ -889,7 +889,7 @@ public class GReqBukkit extends JavaPlugin {
                                 comment = comment.substring(0, comment.length() - 2);
                                 PreparedStatement pst1 = sqlhandler.getCurrentConnection().prepareStatement("UPDATE greq_tickets SET comments = ? WHERE id = ?");
                                 pst1.setString(1, comment);
-                                pst1.setInt(1, id);
+                                pst1.setInt(2, id);
                                 pst1.execute();
                                 break;
                             }
