@@ -26,6 +26,7 @@ import me.sabbertran.greqbukkit.commands.TicketCommand;
 import me.sabbertran.greqbukkit.commands.TicketsCommand;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -45,6 +46,7 @@ public class GReqBukkit extends JavaPlugin {
 
     private HashMap<String, Location> pendingTeleports;
     private HashMap<String, Integer> pendingPurges;
+    private HashMap<OfflinePlayer, Date> blockedUntil;
 
     @Override
     public void onDisable() {
@@ -68,6 +70,7 @@ public class GReqBukkit extends JavaPlugin {
         sql = (ArrayList<String>) getConfig().getStringList("gReq.SQL");
         pendingTeleports = new HashMap<String, Location>();
         pendingPurges = new HashMap<String, Integer>();
+        blockedUntil = new HashMap<OfflinePlayer, Date>();
 
         sqlhandler = new SQLHandler(this);
 
@@ -139,7 +142,7 @@ public class GReqBukkit extends JavaPlugin {
         } else {
             setupMessages();
         }
-        if (messages.size() != 48) {
+        if (messages.size() != 50) {
             setupMessages();
         }
     }
@@ -212,7 +215,7 @@ public class GReqBukkit extends JavaPlugin {
         temp.add("# Notifications #");
         temp.add("There are currently no open tickets.");
         temp.add("There are currently %amount open tickets, check them with /tickets");
-        //Later added messages - new messages system coming soon
+        //Later added messages - new message system coming soon
         temp.add("Could not reopen ticket #%id");
         temp.add("Successfully reopened ticket #%id");
         temp.add("Please use '/tickets purge confirm' to confirm your purge.");
@@ -220,6 +223,8 @@ public class GReqBukkit extends JavaPlugin {
         temp.add("Successfully purged all closed tickets.");
         temp.add("Please use '/tickets purge all/closed' to purge tickets.");
         temp.add("You have no pending purges.");
+        temp.add("You can't open a new ticket until %date.");
+        temp.add("Successfully blocked %name until %date.");
 
         try {
             if (messagesFile.exists()) {
@@ -1066,5 +1071,9 @@ public class GReqBukkit extends JavaPlugin {
 
     public SQLHandler getSqlhandler() {
         return sqlhandler;
+    }
+
+    public HashMap<OfflinePlayer, Date> getBlockedUntil() {
+        return blockedUntil;
     }
 }

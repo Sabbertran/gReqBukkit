@@ -1,6 +1,9 @@
 package me.sabbertran.greqbukkit.commands;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import me.sabbertran.greqbukkit.GReqBukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -235,6 +238,23 @@ public class TicketsCommand implements CommandExecutor {
                 main.sendMessage(sender, main.getMessages().get(47), -1);
                 return true;
             }
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("block")) {
+            OfflinePlayer p = main.getServer().getOfflinePlayer(args[1]);
+            long time = 0;
+            if (args[3].endsWith("s")) {
+                time = Integer.parseInt(args[3].replace("s", "")) * 1000;
+            } else if (args[3].endsWith("m")) {
+                time = Integer.parseInt(args[3].replace("m", "")) * 60 * 1000;
+            } else if (args[3].endsWith("h")) {
+                time = Integer.parseInt(args[3].replace("h", "")) * 60 * 60 * 1000;
+            } else if (args[3].endsWith("d")) {
+                time = Integer.parseInt(args[3].replace("d", "")) * 24 * 60 * 60 * 1000;
+            }
+            Date until = new Date();
+            until.setTime(until.getTime() + time);
+            main.getBlockedUntil().put(p, until);
+            main.sendMessage(sender, main.getMessages().get(49).replace("%name", p.getName()).replace("%date", new SimpleDateFormat(main.getMessages().get(30)).format(main.getBlockedUntil().get(p))), -1);
+            return true;
         } else {
             return false;
         }
