@@ -240,7 +240,7 @@ public class TicketsCommand implements CommandExecutor {
             }
         } else if (args.length == 3 && args[0].equalsIgnoreCase("block")) {
             if (sender.hasPermission("greq.tickets.block")) {
-                OfflinePlayer p = main.getServer().getOfflinePlayer(args[1]);
+                final OfflinePlayer p = main.getServer().getOfflinePlayer(args[1]);
                 long time = 0;
                 if (args[3].endsWith("s")) {
                     time = Integer.parseInt(args[3].replace("s", "")) * 1000;
@@ -254,6 +254,12 @@ public class TicketsCommand implements CommandExecutor {
                 Date until = new Date();
                 until.setTime(until.getTime() + time);
                 main.getBlockedUntil().put(p, until);
+                main.getServer().getScheduler().scheduleSyncDelayedTask(main, new Runnable() {
+                    @Override
+                    public void run() {
+                        main.getBlockedUntil().remove(p);
+                    }
+                }, (time / 1000) * 20);
                 main.sendMessage(sender, main.getMessages().get(49).replace("%name", p.getName()).replace("%date", new SimpleDateFormat(main.getMessages().get(30)).format(main.getBlockedUntil().get(p))), -1);
                 return true;
             } else {
