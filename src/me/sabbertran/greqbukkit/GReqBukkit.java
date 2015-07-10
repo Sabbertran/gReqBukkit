@@ -255,12 +255,11 @@ public class GReqBukkit extends JavaPlugin {
     }
 
     public void sendMessage(CommandSender p, String msg, int id) {
-        msg = ChatColor.translateAlternateColorCodes('&', msg);
         if (id != -1) {
-            p.sendMessage(translateDatabaseVariables(msg, id).split("%n"));
-        } else {
-            p.sendMessage(msg.split("%n"));
+            msg = translateDatabaseVariables(msg, id);
         }
+        msg = ChatColor.translateAlternateColorCodes('&', msg);
+        p.sendMessage(msg.split("%n"));
     }
 
     private String translateDatabaseVariables(String input, int id) {
